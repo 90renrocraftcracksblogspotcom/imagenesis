@@ -1,0 +1,5 @@
+.vercel
+index_old.html
+index_backup.html
+js/config.js
+.env*.local

@@ -1,0 +1,21 @@
+{
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "postcss ./src/input.css -o ./dist/output.css"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "tailwindcss": "^4.1.12"
+  },
+  "dependencies": {
+  "@tailwindcss/cli": "^4.1.12",
+  "sharp": "^0.33.4"
+  }
+}

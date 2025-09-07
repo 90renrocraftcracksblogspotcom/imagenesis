@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en" class="light"> <!-- Force light mode default -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ima-Genesis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Color Wheel Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <style>
+        /* Smooth transitions for theme changes */
+        body, section, footer {
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+        }
+
+        /* Dark Mode Styles */
+        .dark body { background-color: #111827; color: #d1d5db; }
+        .dark section, .dark footer { background-color: rgba(31, 41, 55, 0.6); border-color: rgba(75, 85, 99, 0.5); }
+        .dark h1, .dark h3 { color: #f9fafb; }
+        .dark p, .dark label, .dark div { color: #d1d5db; }
+        .dark input, .dark textarea, .dark select { background-color: #374151; border-color: #4b5563; color: #f9fafb; }
+        .dark #resolution-output { color: #9ca3af; }
+        .dark button:not(.premium-btn) { color: #e5e7eb; }
+
+        /* Custom styles for the color wheel */
+        #color-picker-wrapper {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        #color-picker-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+        
+        /* Modal Styles */
+        #premium-modal-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #premium-modal-content {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        
+        /* Login Screen Background */
+        #login-bg-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        /* Other styles */
+        input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:8px;background:#e5e7eb;border-radius:9999px;outline:none;opacity:.7;transition:opacity .2s}
+        input[type="range"]:hover{opacity:1}
+        input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;background:#fff;border-radius:9999px;cursor:pointer;border:1px solid #d1d5db;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+        input[type="range"]::-moz-range-thumb{width:24px;height:24px;background:#fff;border-radius:9999px;cursor:pointer;border:1px solid #d1d5db;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+        .spinner{border-color:#d1d5db;border-top-color:#3b82f6}
+        .notification{position:fixed;top:5rem;right:1.25rem;background:#2563eb;color:#fff;padding:1rem;border-radius:.75rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);transform:translateX(120%);transition:transform .3s ease-in-out;z-index:50}
+        .notification.success{background:#16a34a}
+        .notification.error{background:#dc2626}
+        .notification.show{transform:translateX(0)}
+    </style>
+</head>
+<body class="font-sans">
+
+    <!-- Decorative translucent background blobs for iOS look -->
+    <div class="fixed inset-0 pointer-events-none -z-10">
+        <div class="absolute w-[60vw] h-[60vw] bg-gradient-to-br from-blue-300/30 to-purple-300/30 rounded-full blur-3xl -top-20 -left-20"></div>
+        <div class="absolute w-[60vw] h-[60vw] bg-gradient-to-br from-pink-300/30 to-rose-300/30 rounded-full blur-3xl -bottom-20 -right-20"></div>
+    </div>
+
+    <!-- Bottom mobile tab bar (visible on login and app) -->
+    <nav id="bottom-tab" class="fixed inset-x-0 z-50 flex justify-center lg:hidden bottom-4">
+        <div class="inline-flex items-center gap-1 px-3 py-2 border shadow-2xl rounded-2xl bg-white/80 backdrop-blur-xl border-white/30">
+            <button id="nav-generate" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-800 transition rounded-xl hover:bg-gray-100">
+                <span class="icon" data-icon="generate" aria-hidden="true"></span>
+                Generate
+            </button>
+            <button id="nav-preview" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-800 transition rounded-xl hover:bg-gray-100">
+                <span class="icon" data-icon="model" aria-hidden="true"></span>
+                Preview
+            </button>
+            <button id="nav-history" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-800 transition rounded-xl hover:bg-gray-100">
+                <span class="icon" data-icon="history" aria-hidden="true"></span>
+                History
+            </button>
+        </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="relative flex flex-col items-center justify-center min-h-screen overflow-hidden pb-20">
+        <video autoplay loop muted playsinline id="login-bg-video">
+            <source src="https://c.tenor.com/9_xaFNxjFGAAAAAC/tenor.gif" type="video/mp4">
+            <!-- Fallback for browsers that don't support video tag -->
+            <img src="https://c.tenor.com/9_xaFNxjFGAAAAAC/tenor.gif" alt="Animated background">
+        </video>
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-pink-900/50"></div>
+        
+        <div class="relative z-10 w-full max-w-lg p-8 text-center border shadow-2xl bg-black/20 backdrop-blur-xl border-white/20 rounded-2xl">
+            <h1 class="text-4xl font-bold tracking-tight text-white md:text-5xl" style="text-shadow: 0 2px 4px rgba(0,0,0,0.4);">Welcome to Ima-Genesis By Renro</h1>
+            <p class="max-w-2xl mx-auto mt-4 text-lg text-gray-200" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Please sign in to continue.</p>
+            <button id="google-signin-btn" class="inline-flex items-center gap-3 px-6 py-3 mt-8 font-semibold text-gray-800 transition transform rounded-lg shadow-lg bg-white/95 hover:bg-white hover:scale-105">
+                <span class="icon w-6 h-6" data-icon="google" aria-hidden="true"></span>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Content (hidden by default) -->
+    <div id="app-content" class="hidden">
+        <!-- Center brand pill -->
+        <div id="topbar" class="fixed z-40 -translate-x-1/2 top-4 left-1/2">
+            <div class="flex items-center gap-2 px-4 py-2 border rounded-full shadow-2xl bg-white/70 backdrop-blur-xl border-white/30">
+                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600"></div>
+                <span class="text-sm font-semibold text-gray-800">Status - Working</span>
+            </div>
+        </div>
+        <!-- User Info & Logout -->
+    <div id="user-info" class="fixed z-50 flex items-center hidden gap-3 px-3 py-2 border rounded-full shadow-2xl top-4 left-4 bg-white/80 backdrop-blur-xl border-white/30">
+            <img id="user-pfp" class="w-8 h-8 rounded-full" src="" alt="PFP">
+            <span id="user-name" class="text-sm font-medium text-gray-800"></span>
+            <span id="premium-badge" class="ml-1 px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-300 rounded-full hidden">Premium</span>
+            <button id="get-premium-btn" class="hidden px-3 py-1 text-sm font-semibold text-blue-600 transition bg-blue-100 rounded-full hover:bg-blue-200">Get Premium</button>
+            <button id="logout-btn" class="px-3 py-1 text-sm font-semibold text-red-600 transition bg-red-100 rounded-full hover:bg-red-200">Logout</button>
+        </div>
+
+        <!-- Premium Controls -->
+        <div class="fixed z-50 flex items-center gap-4 top-4 right-4">
+            <div id="color-wheel-toggle" class="p-2 border rounded-full shadow-xl cursor-pointer bg-white/80 backdrop-blur-xl border-white/30 premium-feature">
+                <span class="w-6 h-6 icon" data-icon="colour-pallete-premium-user" aria-hidden="true"></span>
+            </div>
+            <div id="dark-mode-toggle" class="p-2 border rounded-full shadow-xl cursor-pointer bg-white/80 backdrop-blur-xl border-white/30 premium-feature" title="Toggle theme">
+                <span id="icon-moon" class="icon w-6 h-6" data-icon="moon" aria-hidden="true"></span>
+                <span id="icon-sun" class="icon w-6 h-6 hidden" data-icon="sun" aria-hidden="true"></span>
+            </div>
+            <div id="color-picker-wrapper" class="absolute right-0 transform scale-90 opacity-0 pointer-events-none top-16">
+                <div id="color-picker-container"></div>
+            </div>
+        </div>
+
+        <main class="container px-4 pb-10 mx-auto pt-28 sm:px-6 lg:px-8">
+            <div class="mb-12 text-center">
+                <h1 class="text-4xl font-extrabold tracking-tight text-transparent md:text-5xl bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">Imagenesis v0.4 BETA</h1>
+                <p class="max-w-2xl mx-auto mt-3 text-base text-gray-600">Expect Bugs To Be Present</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <!-- Control Panel -->
+                <section id="controls" class="p-6 border shadow-xl border-white/20 backdrop-blur-xl lg:col-span-1 rounded-3xl bg-white/70">
+                    <h3 class="inline-flex items-center gap-2 mb-6 text-lg font-semibold">
+                        <span class="icon" data-icon="controls" aria-hidden="true"></span>
+                        Generator Controls
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <label for="prompt" class="block mb-2 text-sm font-medium"><span class="inline-flex items-center gap-2"><span class="icon" data-icon="prompt" aria-hidden="true"></span>Prompt</span></label>
+                            <textarea id="prompt" placeholder="A beautiful watercolor painting of a fox..." rows="4" class="w-full p-3 transition border rounded-xl"></textarea>
+                        </div>
+
+                        <!-- Pollinations Specific Controls -->
+                        <div id="pollinations-controls" class="space-y-6">
+                            <div>
+                                <label for="negative-prompt" class="block mb-2 text-sm font-medium"><span class="inline-flex items-center gap-2"><span class="icon" data-icon="negative-prompt" aria-hidden="true"></span>Negative Prompt</span></label>
+                                <input type="text" id="negative-prompt" value="ugly, tiling, poorly drawn hands, blurry" class="w-full p-3 transition border rounded-xl">
+                            </div>
+                            <div>
+                                <label for="resolution-slider" class="block mb-2 text-sm font-medium"><span class="inline-flex items-center gap-2"><span class="icon" data-icon="model" aria-hidden="true"></span>Resolution</span></label>
+                                <input type="range" min="0" max="7" value="2" id="resolution-slider">
+                                <div id="resolution-output" class="mt-2 text-sm text-center">Square (1024x1024)</div>
+                            </div>
+                                                        <div>
+                                                            <label for="engine" class="block mb-2 text-sm font-medium"><span class="inline-flex items-center gap-2"><span class="icon" data-icon="tier" aria-hidden="true"></span>Tier</span></label>
+                                                            <div class="space-y-2">
+                                                                <div class="inline-flex w-full overflow-hidden border border-gray-200 shadow-sm rounded-2xl bg-white/80">
+                                                                    <button type="button" id="seg-free" class="flex-1 px-4 py-2 text-sm font-semibold text-gray-900 bg-white">Free-Tier</button>
+                                                                    <button type="button" id="seg-premium" class="flex-1 px-4 py-2 text-sm font-semibold text-gray-600 bg-transparent">Premium-Tier</button>
+                                                                </div>
+                                                                <div class="relative">
+                                                                    <select id="engine" class="hidden">
+                                                                            <option value="free">Free-Tier</option>
+                                                                            <option value="premium" class="premium-only">Premium-Tier</option>
+                                                                    </select>
+                                                                    <div id="premium-crown" class="absolute hidden -translate-y-1/2 pointer-events-none right-3 top-1/2">
+                                                                         <span class="inline-flex items-center gap-1 font-semibold text-yellow-500 select-none animate-pulse">
+                                                                             <span class="icon w-[18px] h-[18px]" data-icon="tier" aria-hidden="true"></span>
+                                                                             Premium
+                                                                         </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                            <div>
+                                <label for="model" class="block mb-2 text-sm font-medium"><span class="inline-flex items-center gap-2"><span class="icon" data-icon="model" aria-hidden="true"></span>Model</span></label>
+                                <select id="model" class="w-full p-3 transition border rounded-xl"></select>
+                                <div id="model-explanation" class="mt-2 text-sm"></div>
+                            </div>
+                            <div>
+                                <label for="seed" class="block mb-2 text-sm font-medium"><span class="inline-flex items-center gap-2"><span class="icon" data-icon="seed" aria-hidden="true"></span>Seed</span></label>
+                                <div class="flex gap-3">
+                                    <input type="number" id="seed" min="-1" value="-1" class="w-full p-3 transition border rounded-xl">
+                                    <button id="random-seed" class="inline-flex items-center gap-2 px-4 py-2 font-semibold transition bg-gray-200 hover:bg-gray-300 rounded-xl"><span class="icon w-4 h-4" data-icon="seed" aria-hidden="true"></span>Random</button>
+                                </div>
+                            </div>
+                            <div class="pt-2 space-y-4">
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="font-medium">Remove Watermark</span>
+                                    <div class="relative"><input type="checkbox" id="nologo" checked class="sr-only peer"><div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div></div>
+                                </label>
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="font-medium">Safety Mode</span>
+                                    <div class="relative"><input type="checkbox" id="safe" class="sr-only peer"><div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div></div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button id="generate-btn" class="w-full px-6 py-3 text-base font-bold text-white transition transform rounded-full shadow-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 active:scale-[0.99] inline-flex items-center justify-center gap-2">
+                            <span class="icon" data-icon="generate" aria-hidden="true"></span>
+                            Generate Image
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Preview Panel -->
+                <section id="preview" class="p-6 border shadow-xl border-white/20 backdrop-blur-xl lg:col-span-2 rounded-3xl bg-white/70">
+                    <h3 class="inline-flex items-center gap-2 mb-6 text-lg font-semibold">
+                        <span class="icon" data-icon="model" aria-hidden="true"></span>
+                        Image Preview
+                    </h3>
+                    <div class="relative flex items-center justify-center overflow-hidden bg-gray-100 border image-container aspect-square rounded-xl">
+                        <div id="loading" class="absolute inset-0 z-10 flex-col items-center justify-center hidden bg-white/80 backdrop-blur-sm"><div class="w-10 h-10 border-2 rounded-full spinner animate-spin"></div><p class="mt-4">Generating...</p></div>
+                        <img id="preview-image" class="hidden object-contain w-full h-full transition-opacity duration-500">
+                        <div id="placeholder-text" class="text-center text-gray-400"><span class="icon w-16 h-16 mx-auto text-gray-300" data-icon="model" aria-hidden="true"></span><p class="mt-2">Generated images will appear here</p></div>
+                    </div>
+                    <div id="image-actions" class="grid hidden grid-cols-2 gap-4 mt-4">
+                        <button id="download-btn" class="inline-flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition bg-gray-200 hover:bg-gray-300 rounded-xl">
+                            <span class="icon" data-icon="generate" aria-hidden="true"></span>
+                            Download
+                        </button>
+                        <button id="copy-prompt-btn" class="inline-flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition bg-gray-200 hover:bg-gray-300 rounded-xl">
+                            <span class="icon" data-icon="prompt" aria-hidden="true"></span>
+                            Copy Prompt
+                        </button>
+                    </div>
+                </section>
+                
+                <!-- History Panel -->
+                <section id="history-panel" class="p-6 border shadow-xl border-white/20 backdrop-blur-xl lg:col-span-3 rounded-3xl bg-white/70">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="inline-flex items-center gap-2 text-lg font-semibold">
+                            <span class="icon" data-icon="history" aria-hidden="true"></span>
+                            History
+                        </h3>
+                        <button id="clear-history-btn" class="px-4 py-2 text-sm font-semibold text-red-600 transition bg-red-100 hover:bg-red-200 rounded-xl">Clear History</button>
+                    </div>
+                    <div id="history-container" class="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10"></div>
+                </section>
+            </div>
+        </main>
+
+    <footer class="py-10 mt-10 text-sm text-center border-t border-white/20">
+            <p>UI by Renro's Playground</p>
+        </footer>
+    </div>
+
+    <!-- Premium Modal -->
+    <div id="premium-modal-overlay" class="fixed inset-0 z-50 items-center justify-center hidden bg-black/60 backdrop-blur-sm">
+        <div id="premium-modal-content" class="relative w-full max-w-md p-6 mx-4 transform scale-95 bg-white rounded-lg shadow-xl opacity-0">
+            <button id="close-premium-modal" class="absolute p-1 text-gray-500 rounded-full top-2 right-2 hover:bg-gray-200">
+                <span class="icon w-6 h-6" data-icon="controls" aria-hidden="true"></span>
+            </button>
+            <h3 class="text-2xl font-bold text-center text-gray-800">Get Premium Access</h3>
+            <p class="mt-4 text-center text-gray-600">To get free early access to premium features, please contact:</p>
+            <div class="p-4 mt-6 font-mono text-lg text-center text-blue-700 bg-blue-100 border-2 border-blue-300 border-dashed rounded-lg animate-pulse">
+                @renroxd on Discord
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <!-- Optional: Private config injected at deploy time. Create js/config.js from js/config.sample.js and do NOT commit secrets. -->
+    <script src="js/config.js" defer></script>
+
+        <!-- Icon auto-inliner: replaces spans with inlined SVGs from /svg/{name}.svg; also initializes theme/icons -->
+        <script>
+            document.addEventListener('DOMContentLoaded', async () => {
+                const targets = Array.from(document.querySelectorAll('.icon[data-icon]'));
+                await Promise.all(targets.map(async el => {
+                    const name = el.getAttribute('data-icon');
+                    try {
+                        const url = `/svg/${name}.svg`;
+                        const resp = await fetch(url, { cache: 'no-cache' });
+                        if (!resp.ok) throw new Error(`fetch ${name}.svg ${resp.status}`);
+                        const ctype = (resp.headers.get('content-type') || '').toLowerCase();
+                        if (!ctype.includes('image/svg')) throw new Error(`unexpected content-type ${ctype}`);
+                        const svgText = await resp.text();
+                        // Create a container and extract the first <svg>
+                        const div = document.createElement('div');
+                        div.innerHTML = svgText.trim();
+                        const svg = div.querySelector('svg');
+                        if (!svg) throw new Error('no svg tag');
+                        // Preserve id and classes from placeholder
+                        if (el.id) svg.id = el.id;
+                        const classes = Array.from(el.classList || []);
+                        if (classes.length) svg.classList.add(...classes);
+                        // Normalize sizing and colorability
+                        svg.setAttribute('width', svg.getAttribute('width') || '1em');
+                        svg.setAttribute('height', svg.getAttribute('height') || '1em');
+                        if (!svg.getAttribute('fill')) svg.setAttribute('fill', 'currentColor');
+                        // Ensure any explicit size utility classes exist; default if none
+                        const sizeClasses = classes.filter(c => /^w-\d+|^h-\d+/.test(c));
+                        if (!sizeClasses.length) svg.classList.add('w-5','h-5');
+                        el.replaceWith(svg);
+                    } catch (e) {
+                        // Fallback: leave text or remove icon silently
+                        console.warn('Icon load failed:', name, e);
+                        // leave placeholder to avoid layout shift
+                    }
+                }));
+
+                // Initialize theme: FORCE LIGHT always
+                document.documentElement.classList.remove('dark');
+                // Swap moon/sun icons to reflect state
+                const iconMoon = document.getElementById('icon-moon');
+                const iconSun = document.getElementById('icon-sun');
+                if (iconMoon && iconSun) {
+                    iconMoon.classList.remove('hidden');
+                    iconSun.classList.add('hidden');
+                }
+            });
+        </script>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- YOUR FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOZeBcIRFw2g41sUUulS_7XN8wSAT79Kw",
+            authDomain: "auth-imagenesis.firebaseapp.com",
+            projectId: "auth-imagenesis",
+            storageBucket: "auth-imagenesis.appspot.com",
+            messagingSenderId: "782899689715",
+            appId: "1:782899689715:web:187dc78d87cd10077adf86",
+            measurementId: "G-T7X7JMR1WF"
+        };
+        // -----------------------------------------
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+    // Use dev-friendly Firestore transport to avoid noisy 400s on Listen/channel in some environments
+    const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
+        const provider = new GoogleAuthProvider();
+
+        const loginScreen = document.getElementById('login-screen');
+        const appContent = document.getElementById('app-content');
+        const signInBtn = document.getElementById('google-signin-btn');
+        const userInfoDiv = document.getElementById('user-info');
+        const userPfp = document.getElementById('user-pfp');
+        const userNameSpan = document.getElementById('user-name');
+        const premiumBadge = document.getElementById('premium-badge');
+        const getPremiumBtn = document.getElementById('get-premium-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const premiumModalOverlay = document.getElementById('premium-modal-overlay');
+        const premiumModalContent = document.getElementById('premium-modal-content');
+        const closePremiumModalBtn = document.getElementById('close-premium-modal');
+
+        let appInitialized = false;
+
+        // --- AUTHENTICATION ---
+        signInBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider).catch(error => console.error("Sign-in error", error));
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth).catch(error => console.error("Sign-out error", error));
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userPfp.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`;
+                userNameSpan.textContent = user.displayName || 'User';
+                userInfoDiv.classList.remove('hidden');
+                loginScreen.classList.add('hidden');
+                appContent.classList.remove('hidden');
+                
+                const isPremium = await checkPremiumStatus(user.uid);
+                if (!appInitialized) {
+                    initializeAppLogic(isPremium);
+                    appInitialized = true;
+                }
+            } else {
+                userInfoDiv.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+                appContent.classList.add('hidden');
+                appInitialized = false;
+            }
+        });
+
+        // --- PREMIUM/WHITELIST CHECK ---
+        async function checkPremiumStatus(uid) {
+            try {
+                const userDocRef = doc(db, "whitelistedUsers", uid);
+                const docSnap = await getDoc(userDocRef);
+                if (docSnap.exists() && docSnap.data().hasAccess === true) {
+                    console.log("Premium user detected!");
+                    return true;
+                } else {
+                    console.log("Standard user.");
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error checking premium status:", error);
+                return false;
+            }
+        }
+        
+        // --- MAIN APP LOGIC ---
+        function initializeAppLogic(isPremium) {
+            const promptInput = document.getElementById('prompt'),
+                negativePromptInput = document.getElementById('negative-prompt'),
+                engineSelect = document.getElementById('engine'),
+                modelSelect = document.getElementById('model'),
+                modelExplanation = document.getElementById('model-explanation'),
+                resolutionSlider = document.getElementById('resolution-slider'),
+                resolutionOutput = document.getElementById('resolution-output'),
+                seedInput = document.getElementById('seed'),
+                randomSeedBtn = document.getElementById('random-seed'),
+                noLogoCheckbox = document.getElementById('nologo'),
+                safeCheckbox = document.getElementById('safe'),
+                generateBtn = document.getElementById('generate-btn'),
+                previewImage = document.getElementById('preview-image'),
+                placeholderText = document.getElementById('placeholder-text'),
+                loadingIndicator = document.getElementById('loading'),
+                imageActions = document.getElementById('image-actions'),
+                downloadBtn = document.getElementById('download-btn'),
+                copyPromptBtn = document.getElementById('copy-prompt-btn'),
+                historyContainer = document.getElementById('history-container'),
+                clearHistoryBtn = document.getElementById('clear-history-btn'),
+                darkModeToggle = document.getElementById('dark-mode-toggle'),
+                colorWheelToggle = document.getElementById('color-wheel-toggle'),
+                colorPickerWrapper = document.getElementById('color-picker-wrapper');
+            const premiumCrown = document.getElementById('premium-crown');
+            const segFree = document.getElementById('seg-free');
+            const segPremium = document.getElementById('seg-premium');
+
+            // --- PREMIUM MODAL LOGIC ---
+            const showPremiumModal = () => {
+                premiumModalOverlay.classList.remove('hidden');
+                premiumModalOverlay.classList.add('flex');
+                setTimeout(() => {
+                    premiumModalOverlay.classList.remove('opacity-0');
+                    premiumModalContent.classList.remove('scale-95', 'opacity-0');
+                }, 10);
+            };
+            const hidePremiumModal = () => {
+                premiumModalOverlay.classList.add('opacity-0');
+                premiumModalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    premiumModalOverlay.classList.add('hidden');
+                    premiumModalOverlay.classList.remove('flex');
+                }, 300);
+            };
+            getPremiumBtn.addEventListener('click', showPremiumModal);
+            closePremiumModalBtn.addEventListener('click', hidePremiumModal);
+            premiumModalOverlay.addEventListener('click', (e) => {
+                if (e.target === premiumModalOverlay) hidePremiumModal();
+            });
+
+            // --- THEME & COLOR ---
+            function setupPremiumFeatures() {
+                document.querySelectorAll('.premium-feature').forEach(el => {
+            el.style.opacity = '1';
+            el.style.pointerEvents = 'auto';
+            el.title = '';
+                });
+                
+                userNameSpan.classList.add('text-yellow-500', 'font-bold');
+                premiumBadge.classList.remove('hidden');
+                getPremiumBtn.classList.add('hidden');
+
+                let colorPicker = new iro.ColorPicker("#color-picker-container", {
+                    width: 120,
+                    color: "#e5e7eb",
+                    borderWidth: 2,
+                    borderColor: "#fff",
+                    layout: [{ component: iro.ui.Wheel }]
+                });
+
+                colorPicker.on('color:change', function(color) {
+                    document.body.style.backgroundColor = color.hexString;
+                });
+
+                colorWheelToggle.addEventListener('click', () => {
+                    colorPickerWrapper.classList.toggle('opacity-0');
+                    colorPickerWrapper.classList.toggle('scale-95');
+                    colorPickerWrapper.classList.toggle('pointer-events-none');
+                });
+                // Disable dark mode toggle to keep light mode enforced
+                darkModeToggle.addEventListener('click', () => {});
+                // Enable Premium tier option
+                [...engineSelect.options].forEach(o => { if (o.value === 'premium') o.disabled = false; });
+                segPremium.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+        function setupStandardFeatures() {
+                document.querySelectorAll('.premium-feature').forEach(el => {
+            el.style.opacity = '0.5';
+            el.style.pointerEvents = 'none';
+            el.title = 'Contact @renroxd for early access!';
+                });
+                
+                userNameSpan.classList.remove('text-yellow-500', 'font-bold');
+                premiumBadge.classList.add('hidden');
+                getPremiumBtn.classList.remove('hidden');
+
+                 darkModeToggle.addEventListener('click', () => {});
+                 colorWheelToggle.addEventListener('click', () => showNotification('Color themes are a premium feature!', 'error'));
+
+                // Disable Premium tier option and fallback to Free tier
+                engineSelect.value = 'free';
+                [...engineSelect.options].forEach(o => { if (o.value === 'premium') o.disabled = true; });
+                segPremium.classList.add('opacity-50', 'cursor-not-allowed');
+                // Make sure segmented control reflects Free
+                segFree.classList.add('bg-white','text-gray-900');
+                segPremium.classList.remove('bg-white','text-gray-900');
+            }
+
+            if (isPremium) {
+                setupPremiumFeatures();
+            } else {
+                setupStandardFeatures();
+            }
+            // Collapse user info by default on small screens and toggle on avatar click
+            let userMetaExpanded = true;
+            function setUserMeta(expanded) {
+                userMetaExpanded = expanded;
+                const method = expanded ? 'remove' : 'add';
+                userNameSpan.classList[method]('hidden');
+                premiumBadge.classList[method]('hidden');
+                // Only toggle "Get Premium" for non-premium users; keep hidden for premium users
+                if (!isPremium) {
+                    getPremiumBtn.classList[method]('hidden');
+                } else {
+                    getPremiumBtn.classList.add('hidden');
+                }
+                logoutBtn.classList[method]('hidden');
+                userInfoDiv.classList.toggle('pr-2', !expanded);
+            }
+            if (window.innerWidth < 1024) setUserMeta(false);
+            userPfp.addEventListener('click', () => setUserMeta(!userMetaExpanded));
+            
+            function showNotification(message, type = 'info') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = 'notification';
+                if (type === 'success') notification.classList.add('success');
+                else if (type === 'error') notification.classList.add('error');
+                notification.classList.add('show');
+                setTimeout(() => notification.classList.remove('show'), 3000);
+            }
+
+            // --- IMAGE GENERATION ---
+            const MODELS_REQUIRE_INPUT = new Set([
+                '@cf/runwayml/stable-diffusion-v1-5-img2img',
+                '@cf/runwayml/stable-diffusion-v1-5-inpainting'
+            ]);
+            const isCFModel = (id) => typeof id === 'string' && id.startsWith('@cf/');
+            let pollinationsList = null; // cache
+
+            async function ensurePollinationsLoaded() {
+                if (pollinationsList) return;
+                const fallback = ['flux','sdxl','dall-e-3','playground-v2','turbo'];
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 5000);
+                    const resp = await fetch('https://image.pollinations.ai/models', { signal: controller.signal });
+                    clearTimeout(timeout);
+                    if (!resp.ok) throw new Error('Failed to fetch');
+                    const models = await resp.json();
+                    pollinationsList = Array.isArray(models) ? models.map(String) : fallback;
+                } catch (_) {
+                    pollinationsList = fallback;
+                }
+            }
+            generateBtn.addEventListener('click', async function() {
+                const prompt = promptInput.value.trim();
+                if (!prompt) {
+                    showNotification('Please enter a prompt.', 'error');
+                    return;
+                }
+                loadingIndicator.classList.remove('hidden');
+                loadingIndicator.classList.add('flex');
+                placeholderText.classList.add('hidden');
+                previewImage.classList.add('hidden');
+                imageActions.classList.add('hidden');
+                
+                if (engineSelect.value === 'premium') {
+                    if (MODELS_REQUIRE_INPUT.has(modelSelect.value)) {
+                        loadingIndicator.classList.add('hidden');
+                        loadingIndicator.classList.remove('flex');
+                        showNotification('Selected model requires an input image/mask. Coming soon!', 'error');
+                        return;
+                    }
+                    // Premium supports CF models and Pollinations turbo
+                    if (modelSelect.value === 'turbo') {
+                        generateWithPollinations(prompt);
+                    } else {
+                        generateWithCloudflare(prompt);
+                    }
+                } else {
+                    // Free supports CF SDXL base and Pollinations (except turbo)
+                    if (isCFModel(modelSelect.value)) {
+                        generateWithFreeTier(prompt);
+                    } else {
+                        generateWithPollinations(prompt);
+                    }
+                }
+            });
+
+            const PREMIUM_MODELS = [
+                { id: '@cf/bytedance/stable-diffusion-xl-lightning', label: 'SDXL Lightning (Fast)' },
+                { id: '@cf/lykon/dreamshaper-8-lcm', label: 'Dreamshaper 8 LCM' },
+                { id: '@cf/black-forest-labs/flux-1-schnell', label: 'Flux 1 Schnell' },
+                { id: '@cf/runwayml/stable-diffusion-v1-5-img2img', label: 'Stable Diffusion v1.5 – Img2Img' },
+                { id: '@cf/runwayml/stable-diffusion-v1-5-inpainting', label: 'Stable Diffusion v1.5 – Inpainting' }
+            ];
+            const FREE_MODELS = [
+                { id: '@cf/stabilityai/stable-diffusion-xl-base-1.0', label: 'Stable Diffusion XL (Base 1.0)' }
+            ];
+
+            async function generateWithFreeTier(prompt) {
+                const selectedRes = resolutions[resolutionSlider.value];
+                const body = {
+                    prompt,
+                    model: modelSelect.value,
+                    width: selectedRes.width,
+                    height: selectedRes.height,
+                    negative_prompt: negativePromptInput.value
+                };
+                // Always proxy via Vercel (no client secret for free tier)
+                try {
+                    const resp = await fetch('/api/imagenesis', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    if (!resp.ok) {
+                        // Optional local fallback when running without Vercel dev server
+                        if (resp.status === 404 && window.IMAGENESIS_CFG && window.IMAGENESIS_CFG.WORKER_URL) {
+                            const headers = { 'Content-Type': 'application/json' };
+                            if (window.IMAGENESIS_CFG.API_KEY) headers['Authorization'] = `Bearer ${window.IMAGENESIS_CFG.API_KEY}`;
+                            const wf = await fetch(window.IMAGENESIS_CFG.WORKER_URL, { method: 'POST', headers, body: JSON.stringify(body) });
+                            if (!wf.ok) {
+                                const t2 = await wf.text().catch(() => '');
+                                throw new Error(`Worker fallback error ${wf.status}: ${t2}`);
+                            }
+                            const blob = await wf.blob();
+                            const dataUrl = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(blob);
+                            });
+                            previewImage.onload = () => {
+                                loadingIndicator.classList.add('hidden');
+                                loadingIndicator.classList.remove('flex');
+                                previewImage.classList.remove('hidden');
+                                imageActions.classList.remove('hidden');
+                                imageActions.classList.add('grid');
+                                const details = { prompt, model: modelSelect.value, dimensions: `${selectedRes.width}x${selectedRes.height}`, generated_at: new Date().toLocaleString() };
+                                addToHistory(dataUrl, details);
+                            };
+                            previewImage.onerror = () => handleGenerationError('Failed to load image from Worker fallback.');
+                            previewImage.src = '';
+                            setTimeout(() => { previewImage.src = dataUrl; }, 0);
+                            return; // handled via fallback
+                        }
+                        const text = await resp.text().catch(() => '');
+                        throw new Error(`Free-tier error ${resp.status}: ${text}`);
+                    }
+                    const blob = await resp.blob();
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    previewImage.onload = () => {
+                        loadingIndicator.classList.add('hidden');
+                        loadingIndicator.classList.remove('flex');
+                        previewImage.classList.remove('hidden');
+                        imageActions.classList.remove('hidden');
+                        imageActions.classList.add('grid');
+                        const details = { prompt, model: modelSelect.value, dimensions: `${selectedRes.width}x${selectedRes.height}`, generated_at: new Date().toLocaleString() };
+                        addToHistory(dataUrl, details);
+                    };
+                    previewImage.onerror = () => handleGenerationError('Failed to load image from Free-Tier.');
+                    // Reset src to force onload even if dataUrl is identical
+                    previewImage.src = '';
+                    setTimeout(() => { previewImage.src = dataUrl; }, 0);
+                } catch (e) {
+                    handleGenerationError(e.message || 'Free-Tier request failed.');
+                }
+            }
+
+            async function generateWithPollinations(prompt) {
+                const selectedRes = resolutions[resolutionSlider.value];
+                const seedValue = seedInput.value === '-1' ? Math.floor(Math.random() * 2147483647) : seedInput.value;
+                const params = {
+                    prompt,
+                    model: modelSelect.value,
+                    width: selectedRes.width,
+                    height: selectedRes.height,
+                    seed: seedValue,
+                    nologo: noLogoCheckbox.checked,
+                    safe: safeCheckbox.checked,
+                    negative_prompt: negativePromptInput.value
+                };
+                let url = `https://image.pollinations.ai/prompt/${encodeURIComponent(params.prompt)}?width=${params.width}&height=${params.height}&seed=${params.seed}&model=${params.model}`;
+                if (params.negative_prompt) url += `&negative_prompt=${encodeURIComponent(params.negative_prompt)}`;
+                if (params.nologo) url += '&nologo=true';
+                if (!params.safe) url += '&safe=false';
+                // Cache-bust so repeat generates trigger image reloads
+                url += `&t=${Date.now()}`;
+
+                previewImage.onload = () => {
+                    loadingIndicator.classList.add('hidden');
+                    loadingIndicator.classList.remove('flex');
+                    previewImage.classList.remove('hidden');
+                    imageActions.classList.remove('hidden');
+                    imageActions.classList.add('grid');
+                    const details = { ...params, dimensions: `${params.width}x${params.height}`, generated_at: new Date().toLocaleString() };
+                    delete details.width; delete details.height;
+                    addToHistory(previewImage.src, details);
+                };
+                previewImage.onerror = () => handleGenerationError('Failed to load image from Pollinations.');
+                // Reset src to force onload even if URL repeats
+                previewImage.src = '';
+                setTimeout(() => { previewImage.src = url; }, 0);
+            }
+
+            async function generateWithCloudflare(prompt) {
+                const selectedRes = resolutions[resolutionSlider.value];
+                const body = {
+                    prompt,
+                    model: modelSelect.value,
+                    width: selectedRes.width,
+                    height: selectedRes.height,
+                    negative_prompt: negativePromptInput.value
+                };
+
+                // Read config injected via js/config.js
+                const cfg = (window.IMAGENESIS_CFG || {});
+                // Prefer Vercel API (no client secret). Falls back to Worker URL only if explicitly configured.
+                const VER_API = '/api/imagenesis';
+                const DIRECT_WORKER_URL = cfg.WORKER_URL; // optional fallback
+                const USE_DIRECT = Boolean(cfg.API_KEY && DIRECT_WORKER_URL);
+
+                try {
+                    const targetUrl = USE_DIRECT ? DIRECT_WORKER_URL : VER_API;
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (USE_DIRECT) headers['Authorization'] = `Bearer ${cfg.API_KEY}`;
+
+                    const resp = await fetch(targetUrl, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!resp.ok) {
+                        const text = await resp.text().catch(() => '');
+                        throw new Error(`Worker error ${resp.status}: ${text}`);
+                    }
+                    const dataUrl = await decodeResponseToPngDataUrl(resp);
+
+                    previewImage.onload = () => {
+                        loadingIndicator.classList.add('hidden');
+                        loadingIndicator.classList.remove('flex');
+                        previewImage.classList.remove('hidden');
+                        imageActions.classList.remove('hidden');
+                        imageActions.classList.add('grid');
+                        const details = { prompt, model: modelSelect.value, dimensions: `${selectedRes.width}x${selectedRes.height}`, generated_at: new Date().toLocaleString() };
+                        addToHistory(dataUrl, details);
+                    };
+                    previewImage.onerror = () => handleGenerationError('Failed to load image from Cloudflare Worker.');
+                    // Reset src to force onload even if dataUrl is identical
+                    previewImage.src = '';
+                    setTimeout(() => { previewImage.src = dataUrl; }, 0);
+                } catch (e) {
+                    handleGenerationError(e.message || 'Cloudflare Worker request failed.');
+                }
+            }
+
+            // --- Robust response decoder: sniff type and transcode to PNG client-side ---
+            async function decodeResponseToPngDataUrl(resp) {
+                const buf = await resp.arrayBuffer();
+                const type = sniffImageType(new Uint8Array(buf));
+                // If API mistakenly returns JSON, surface that
+                const hdr = (resp.headers.get('content-type') || '').toLowerCase();
+                if ((!type && !hdr.startsWith('image/'))) {
+                    let text = '';
+                    try { text = new TextDecoder('utf-8').decode(buf); } catch {}
+                    throw new Error(`Non-image response (${hdr || 'unknown'}): ${text.slice(0, 400)}`);
+                }
+                const imgType = type || (hdr.startsWith('image/') ? hdr : 'application/octet-stream');
+                const blob = new Blob([buf], { type: imgType });
+                // Try ImageBitmap path first
+                try {
+                    const bmp = await createImageBitmap(blob);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = bmp.width; canvas.height = bmp.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(bmp, 0, 0);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    return dataUrl;
+                } catch (_) {
+                    // Fallback to Image element decode
+                    const url = URL.createObjectURL(blob);
+                    try {
+                        const img = await new Promise((resolve, reject) => {
+                            const im = new Image();
+                            im.onload = () => resolve(im);
+                            im.onerror = reject;
+                            im.src = url;
+                        });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width; canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const dataUrl = canvas.toDataURL('image/png');
+                        return dataUrl;
+                    } finally {
+                        URL.revokeObjectURL(url);
+                    }
+                }
+            }
+
+            function sniffImageType(sig) {
+                // sig is Uint8Array
+                if (sig.length >= 8 && sig[0] === 0x89 && sig[1] === 0x50 && sig[2] === 0x4E && sig[3] === 0x47 && sig[4] === 0x0D && sig[5] === 0x0A && sig[6] === 0x1A && sig[7] === 0x0A) return 'image/png';
+                if (sig.length >= 2 && sig[0] === 0xFF && sig[1] === 0xD8) return 'image/jpeg';
+                if (sig.length >= 3 && sig[0] === 0x47 && sig[1] === 0x49 && sig[2] === 0x46) return 'image/gif';
+                if (sig.length >= 12 && sig[0] === 0x52 && sig[1] === 0x49 && sig[2] === 0x46 && sig[3] === 0x46 && sig[8] === 0x57 && sig[9] === 0x45 && sig[10] === 0x42 && sig[11] === 0x50) return 'image/webp';
+                return null;
+            }
+
+            function handleGenerationError(message) {
+                console.error("Generation failed:", message);
+                loadingIndicator.classList.add('hidden');
+                loadingIndicator.classList.remove('flex');
+                placeholderText.classList.remove('hidden');
+                showNotification(`Error: ${message}`, 'error');
+            }
+
+            downloadBtn.addEventListener('click', () => {
+                const a = document.createElement('a');
+                a.href = previewImage.src;
+                a.download = `ai-image-${Date.now()}.png`;
+                a.click();
+            });
+
+            copyPromptBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(promptInput.value).then(() => showNotification('Prompt copied!', 'success'));
+            });
+
+            // --- HISTORY ---
+            const MAX_HISTORY = 40;
+            const HISTORY_KEY = `aiImageHistory_multi_${auth.currentUser?.uid}`;
+            const getHistory = () => JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            
+            function addToHistory(imageUrl, details) {
+                const history = getHistory();
+                if (history.length > 0 && history[0].imageUrl === imageUrl) return;
+                const newHistory = [{ imageUrl, details }, ...history].slice(0, MAX_HISTORY);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+                renderHistory();
+            }
+
+            function renderHistory() {
+                const history = getHistory();
+                historyContainer.innerHTML = history.length === 0 ? `<div class="py-8 text-center text-gray-400 col-span-full">Your generated images will be stored here.</div>` : '';
+                history.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'relative group aspect-square bg-gray-200 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500';
+                    historyItem.tabIndex = 0;
+                    historyItem.innerHTML = `<img src="${item.imageUrl}" alt="AI History Image" loading="lazy" class="object-cover w-full h-full transition-transform group-hover:scale-110"><div class="absolute inset-0 flex items-end p-2 transition-opacity opacity-0 bg-gradient-to-t from-black/70 to-transparent group-hover:opacity-100"><p class="text-xs font-medium text-white truncate">${item.details.prompt}</p></div>`;
+                    
+                    const loadHistoryItem = () => {
+                        previewImage.src = item.imageUrl;
+                        previewImage.classList.remove('hidden');
+                        placeholderText.classList.add('hidden');
+                        imageActions.classList.remove('hidden');
+                        imageActions.classList.add('grid');
+                        promptInput.value = item.details.prompt;
+                        if(item.details.model) {
+                            negativePromptInput.value = item.details.negative_prompt || '';
+                            modelSelect.value = item.details.model;
+                            seedInput.value = item.details.seed;
+                            const resIndex = resolutions.findIndex(r => r.width == item.details.dimensions.split('x')[0]);
+                            if (resIndex !== -1) resolutionSlider.value = resIndex;
+                            updateResolutionOutput();
+                            updateModelExplanation();
+                        }
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    historyItem.addEventListener('click', loadHistoryItem);
+                    historyItem.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') loadHistoryItem(); });
+                    historyContainer.appendChild(historyItem);
+                });
+            }
+
+            clearHistoryBtn.addEventListener('click', () => {
+                if (confirm('Clear all history?')) {
+                    localStorage.removeItem(HISTORY_KEY);
+                    renderHistory();
+                    showNotification('History cleared.', 'success');
+                }
+            });
+
+            // --- POLLINATIONS-SPECIFIC SETUP ---
+            const resolutions = [
+                { name: "Mobile Portrait", width: 720, height: 1280 }, { name: "Mobile Landscape", width: 1280, height: 720 },
+                { name: "Square", width: 1024, height: 1024 }, { name: "Portrait (4:5)", width: 1080, height: 1350 },
+                { name: "Widescreen (16:9)", width: 1920, height: 1080 }, { name: "Desktop", width: 1920, height: 1200 },
+                { name: "YouTube Thumbnail", width: 1280, height: 720 }, { name: "Ultra-Wide", width: 2560, height: 1080 }
+            ];
+
+            const modelDescriptions = {
+                // Cloudflare
+                '@cf/stabilityai/stable-diffusion-xl-base-1.0': '<b>SDXL Base 1.0 (Free Tier):</b> High-quality general photorealism.',
+                '@cf/bytedance/stable-diffusion-xl-lightning': '<b>SDXL Lightning (Premium):</b> Very fast inference, good quality.',
+                '@cf/lykon/dreamshaper-8-lcm': '<b>Dreamshaper 8 LCM (Premium):</b> Stylized, creative outputs.',
+                '@cf/black-forest-labs/flux-1-schnell': '<b>Flux 1 Schnell (Premium):</b> Fast, detailed generations.',
+                '@cf/runwayml/stable-diffusion-v1-5-img2img': '<b>SD v1.5 Img2Img (Premium):</b> Transform an input image guided by the prompt.',
+                '@cf/runwayml/stable-diffusion-v1-5-inpainting': '<b>SD v1.5 Inpainting (Premium):</b> Edit masked areas in an image.',
+                // Pollinations
+                'flux': '<b>Flux (Pollinations):</b> Strong general-purpose model.',
+                'sdxl': '<b>Stable Diffusion XL (Pollinations):</b> Robust base model for photorealism.',
+                'dall-e-3': "<b>DALL·E 3 (Pollinations):</b> Creative, detailed images.",
+                'playground-v2': "<b>Playground v2 (Pollinations):</b> Vibrant artistic styles.",
+                'turbo': "<b>Turbo (Pollinations, Premium):</b> Fast generation.",
+                'default': 'A general-purpose model.'
+            };
+
+            function updateResolutionOutput() {
+                const selectedRes = resolutions[resolutionSlider.value];
+                resolutionOutput.textContent = `${selectedRes.name} (${selectedRes.width}x${selectedRes.height})`;
+            }
+
+            function updateModelExplanation() {
+                const selectedModel = modelSelect.value;
+                modelExplanation.innerHTML = modelDescriptions[selectedModel] || modelDescriptions['default'];
+            }
+
+            async function fetchAndPopulateModels() {
+                try {
+                    await ensurePollinationsLoaded();
+                    if (engineSelect.value === 'premium') {
+                        const premiumList = [
+                            ...PREMIUM_MODELS,
+                            { id: 'turbo', label: 'Turbo (Pollinations)' }
+                        ];
+                        modelSelect.innerHTML = premiumList.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+                        updateModelExplanation();
+                        premiumCrown?.classList.remove('hidden');
+                        return;
+                    }
+                    // free tier: CF SDXL + Pollinations (except turbo)
+                    const pollis = (pollinationsList || []).filter(m => m !== 'turbo');
+                    const poliOptions = pollis.map(id => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) }));
+                    const freeList = [
+                        ...FREE_MODELS,
+                        ...poliOptions
+                    ];
+                    modelSelect.innerHTML = freeList.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+                    updateModelExplanation();
+                    premiumCrown?.classList.add('hidden');
+                } catch (error) {
+                    showNotification('Could not fetch AI models.', 'error');
+                    // fallback to built-in lists
+                    const list = engineSelect.value === 'premium' ? [...PREMIUM_MODELS, { id: 'turbo', label: 'Turbo (Pollinations)' }] : FREE_MODELS;
+                    modelSelect.innerHTML = list.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+                }
+            }
+
+            randomSeedBtn.addEventListener('click', () => { seedInput.value = Math.floor(Math.random() * 2147483647); });
+            resolutionSlider.addEventListener('input', updateResolutionOutput);
+            modelSelect.addEventListener('change', updateModelExplanation);
+            function updateTierStyling() {
+                const isPremiumTier = engineSelect.value === 'premium';
+                premiumCrown?.classList.toggle('hidden', !isPremiumTier);
+                // Gold animated text for the select when premium is chosen
+                segFree.classList.toggle('bg-white', !isPremiumTier);
+                segFree.classList.toggle('text-gray-900', !isPremiumTier);
+                segFree.classList.toggle('text-gray-600', isPremiumTier);
+                segPremium.classList.toggle('bg-white', isPremiumTier);
+                segPremium.classList.toggle('text-gray-900', isPremiumTier);
+                segPremium.classList.toggle('text-gray-600', !isPremiumTier);
+            }
+
+            engineSelect.addEventListener('change', () => { 
+                fetchAndPopulateModels();
+                updateTierStyling();
+            });
+            // Segmented control click handlers
+            segFree.addEventListener('click', () => {
+                if (engineSelect.value !== 'free') {
+                    engineSelect.value = 'free';
+                    engineSelect.dispatchEvent(new Event('change'));
+                }
+            });
+            segPremium.addEventListener('click', () => {
+                // Block when disabled for non-premium users
+                const premiumOpt = [...engineSelect.options].find(o => o.value === 'premium');
+                if (premiumOpt?.disabled) return;
+                if (engineSelect.value !== 'premium') {
+                    engineSelect.value = 'premium';
+                    engineSelect.dispatchEvent(new Event('change'));
+                }
+            });
+
+            // Initialize styling based on default value
+            updateTierStyling();
+
+            fetchAndPopulateModels();
+            renderHistory();
+
+            // Bottom tab navigation smooth scroll
+            const navGen = document.getElementById('nav-generate');
+            const navPrev = document.getElementById('nav-preview');
+            const navHist = document.getElementById('nav-history');
+            const controlsSection = document.getElementById('controls');
+            const previewSection = document.getElementById('preview');
+            const historySection = document.getElementById('history-panel');
+            const smoothGo = (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            navGen?.addEventListener('click', () => smoothGo(controlsSection));
+            navPrev?.addEventListener('click', () => smoothGo(previewSection));
+            navHist?.addEventListener('click', () => smoothGo(historySection));
+        }
+    </script>
+</body>
+</html>
